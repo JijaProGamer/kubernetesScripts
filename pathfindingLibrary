@@ -136,6 +136,4 @@ library.pathfind = function(position, visualize)
 	followPath(visualize, position, currentId)
 end
 
-library.pathfind(workspace.Part.Position, true)
-
 return library
