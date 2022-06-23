@@ -1,0 +1,141 @@
+local library = {}
+
+local Players = game:GetService("Players")
+local PathfindingService = game:GetService("PathfindingService")
+local RunService = game:GetService("RunService")
+
+local LocalPlayer = Players.LocalPlayer
+local LocalCharacter = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+local LocalHumanoid = LocalCharacter:WaitForChild("Humanoid")
+
+LocalPlayer.CharacterRemoving:Connect(function() 
+	LocalCharacter = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+	LocalHumanoid = LocalCharacter:WaitForChild("Humanoid")
+end)
+
+library.walkToPoint = function(position, timeout)
+	if LocalHumanoid then
+		LocalHumanoid:MoveTo(position)
+		local start = tick()
+		local finished = false
+
+		LocalHumanoid.MoveToFinished:Connect(function()
+			finished = true
+		end)
+
+		repeat
+			RunService.Heartbeat:Wait()
+		until start + timeout < tick() or finished
+		
+		return finished
+	end
+end
+
+local currentId = 0
+local path
+local waypoints
+local nextWaypointIndex
+local blockedConnection
+
+local function followPath(visualize, position, id)
+	local Paths = workspace:FindFirstChild("paths")
+	
+	path = PathfindingService:CreatePath({
+		AgentRadius = 1.5,
+		AgentHeight = 3,
+		AgentCanJump = false,
+		WaypointSpacing = 5,
+	})
+
+	path:ComputeAsync(LocalCharacter:WaitForChild("Head").Position, position)
+	
+	if path.Status == Enum.PathStatus.Success then
+		waypoints = path:GetWaypoints()
+
+		 blockedConnection = path.Blocked:Connect(function(blockedWaypointIndex)
+			if blockedWaypointIndex >= nextWaypointIndex then
+				blockedConnection:Disconnect()
+				followPath(visualize, position, id)
+			end
+		end)
+		
+		for i = 1, math.max(#waypoints, 2) do
+			local int = i
+			
+			local waypoint = waypoints[int]
+			nextWaypointIndex = int
+			
+			if visualize then
+				Paths:WaitForChild(int):Destroy()
+			end
+			
+			if currentId > id then
+				break
+			end
+			
+			if waypoint.Action == Enum.PathWaypointAction.Jump then
+				LocalHumanoid.Jump = true
+			end
+			
+			library.walkToPoint(waypoint.Position, 1)
+		end
+	end
+end
+
+library.pathMagnitude = function(position)
+	local Path = PathfindingService:CreatePath({
+		AgentRadius = 1.5,
+		AgentHeight = 3,
+		AgentCanJump = true,
+		WaypointSpacing = 1,
+	})
+
+	Path:ComputeAsync(LocalCharacter:WaitForChild("Head").Position, position)
+
+	local size = 0
+
+	local Waypoints = Path:GetWaypoints()
+	if #Waypoints >= 2 then
+		for i = 2,#Waypoints do
+			size += (Waypoints[i-1].Position - Waypoints[i].Position).Magnitude
+		end		
+	end
+
+	return size
+end
+
+library.pathfind = function(position, visualize)
+	currentId += 1
+	
+	if visualize then
+		local Paths = workspace:FindFirstChild("paths") or Instance.new("Folder")
+		Paths.Name = "paths"
+		Paths.Parent = workspace
+		
+		coroutine.wrap(function()
+			task.wait(0.1)
+			local Waypoints = path:GetWaypoints()
+
+			for i,waypoint in pairs(Waypoints) do
+				local NewPart = Instance.new("Part")
+				NewPart.Shape = Enum.PartType.Ball
+				NewPart.Position = waypoint.Position
+				NewPart.Color = Color3.fromRGB(255,255,255)
+				NewPart.Material = Enum.Material.SmoothPlastic
+				NewPart.Anchored = true
+				NewPart.CanQuery = false
+				NewPart.CanCollide = false
+				NewPart.Name = i
+				NewPart.Size = Vector3.new(1,1,1)
+
+				NewPart.Parent = Paths
+			end
+		end)()
+	end
+	
+	followPath(visualize, position, currentId)
+end
+
+library.pathfind(workspace.Part.Position, true)
+
+return library
