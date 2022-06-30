@@ -42,9 +42,9 @@ local function followPath(visualize, position, id)
 	
 	path = PathfindingService:CreatePath({
 		AgentRadius = 1.5,
-		AgentHeight = 3,
+		AgentHeight = 4,
 		AgentCanJump = false,
-		WaypointSpacing = 5,
+		WaypointSpacing = 2,
 	})
 
 	path:ComputeAsync(LocalCharacter:WaitForChild("Head").Position, position)
@@ -77,6 +77,7 @@ local function followPath(visualize, position, id)
 				LocalHumanoid.Jump = true
 			end
 			
+			workspace.CurrentCamera.CFrame = CFrame.lookAt(workspace.CurrentCamera.CFrame.Position, waypoint.Position + Vector3.new(0, 4,0))
 			library.walkToPoint(waypoint.Position, 1)
 		end
 	end
@@ -120,13 +121,13 @@ library.pathfind = function(position, visualize)
 				local NewPart = Instance.new("Part")
 				NewPart.Shape = Enum.PartType.Ball
 				NewPart.Position = waypoint.Position
-				NewPart.Color = Color3.fromRGB(255,255,255)
-				NewPart.Material = Enum.Material.SmoothPlastic
+				NewPart.Color = Color3.fromRGB(106, 245, 0)
+				NewPart.Material = Enum.Material.Neon
 				NewPart.Anchored = true
 				NewPart.CanQuery = false
 				NewPart.CanCollide = false
 				NewPart.Name = i
-				NewPart.Size = Vector3.new(1,1,1)
+				NewPart.Size = Vector3.new(0.3,0.3,0.3)
 
 				NewPart.Parent = Paths
 			end
