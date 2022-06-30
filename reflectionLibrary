@@ -1,0 +1,128 @@
+local library = {}
+
+local Players = game:GetService("Players")
+local PathfindingService = game:GetService("PathfindingService")
+local UserInputService = game:GetService("UserInputService")
+
+local LocalPlayer = Players.LocalPlayer
+local LocalCharacter = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+local LocalHumanoid = LocalCharacter:WaitForChild("Humanoid")
+
+local Mouse = LocalPlayer:GetMouse()
+local KeysDown = {}
+
+LocalPlayer.CharacterRemoving:Connect(function() 
+	LocalCharacter = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+	LocalHumanoid = LocalCharacter:WaitForChild("Humanoid")
+end)
+
+local OldNameCall = nil
+
+OldNameCall = hookmetamethod(game, "__namecall", function(Self, ...)
+	local Args = {...}
+	local NamecallMethod = getnamecallmethod()
+
+	if not checkcaller() and Self == UserInputService and NamecallMethod == "IsKeyDown" then
+		if table.find(KeysDown,  Args[1]) then
+			return true
+		end
+	end
+
+	return OldNameCall(Self, ...)
+end)
+
+
+library.simulateLeftClick = function(duration)
+	for _, Connection in ipairs(getconnections(Mouse.Button1Down)) do
+		Connection:Fire()
+	end
+
+	for _, Connection in ipairs(getconnections(UserInputService.InputBegan)) do
+		Connection:Fire({
+			UserInputType = Enum.UserInputType.MouseButton1,
+			IsModifierKeyDown = false,
+			KeyCode = Enum.KeyCode.Unknown,
+			Delta = Vector3.new(0, 0, 0),
+			UserInputState = Enum.UserInputState.Begin
+		}, false)
+	end
+
+	task.wait(duration)
+
+	for _, Connection in ipairs(getconnections(Mouse.Button1Up)) do
+		Connection:Fire()
+	end
+
+	for _, Connection in ipairs(getconnections(UserInputService.InputEnded)) do
+		Connection:Fire({
+			UserInputType = Enum.UserInputType.MouseButton1,
+			IsModifierKeyDown = false,
+			KeyCode = Enum.KeyCode.Unknown,
+			Delta = Vector3.new(0, 0, 0),
+			UserInputState = Enum.UserInputState.End
+		}, false)
+	end
+end
+
+library.simulateRightClick = function(duration)
+	for _, Connection in ipairs(getconnections(Mouse.Button2Down)) do
+		Connection:Fire()
+	end
+
+	for _, Connection in ipairs(getconnections(UserInputService.InputBegan)) do
+		Connection:Fire({
+			UserInputType = Enum.UserInputType.MouseButton2,
+			IsModifierKeyDown = false,
+			KeyCode = Enum.KeyCode.Unknown,
+			Delta = Vector3.new(0, 0, 0),
+			UserInputState = Enum.UserInputState.Begin
+		}, false)
+	end
+
+	task.wait(duration)
+
+	for _, Connection in ipairs(getconnections(Mouse.Button2Down)) do
+		Connection:Fire()
+	end
+
+	for _, Connection in ipairs(getconnections(UserInputService.InputEnded)) do
+		Connection:Fire({
+			UserInputType = Enum.UserInputType.MouseButton2,
+			IsModifierKeyDown = false,
+			KeyCode = Enum.KeyCode.Unknown,
+			Delta = Vector3.new(0, 0, 0),
+			UserInputState = Enum.UserInputState.End
+		}, false)
+	end
+end
+
+library.simulateKeyPress = function(key, duration)
+	table.insert(KeysDown, key)
+	local keyIndex = table.find(KeysDown, key)
+	
+	for _, Connection in ipairs(getconnections(UserInputService.InputBegan)) do
+		Connection:Fire({
+			UserInputType = Enum.UserInputType.Keyboard,
+			IsModifierKeyDown = false,
+			KeyCode = key,
+			Delta = Vector3.new(0, 0, 0),
+			UserInputState = Enum.UserInputState.Begin
+		}, false)
+	end
+
+	task.wait(duration)
+
+	for _, Connection in ipairs(getconnections(UserInputService.InputEnded)) do
+		Connection:Fire({
+			UserInputType = Enum.UserInputType.Keyboard,
+			IsModifierKeyDown = false,
+			KeyCode = key,
+			Delta = Vector3.new(0, 0, 0),
+			UserInputState = Enum.UserInputState.End
+		}, false)
+	end
+	
+	table.remove(KeysDown, keyIndex)
+end
+
+return library
