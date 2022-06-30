@@ -69,6 +69,9 @@ library.getClosestPlayer = function(includeCallback, exportCallback)
 	end
 	
 	table.sort(NearestPlayers, function(player1, player2)
+		print(player1.distance, player2.distance)
+		print(player1.distance > player2.distance)
+		
 		return player1.distance > player2.distance
 	end)
 	
