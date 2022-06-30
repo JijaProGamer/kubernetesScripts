@@ -43,7 +43,7 @@ local function followPath(visualize, position, id)
 	path = PathfindingService:CreatePath({
 		AgentRadius = 1.5,
 		AgentHeight = 4,
-		AgentCanJump = false,
+		AgentCanJump = true,
 		WaypointSpacing = 2,
 	})
 
@@ -65,7 +65,7 @@ local function followPath(visualize, position, id)
 			local waypoint = waypoints[int]
 			nextWaypointIndex = int
 			
-			if visualize then
+			if visualize and workspace:FindFirstChild("paths") and currentId > id then
 				Paths:WaitForChild(int):Destroy()
 			end
 			
@@ -74,6 +74,7 @@ local function followPath(visualize, position, id)
 			end
 			
 			if waypoint.Action == Enum.PathWaypointAction.Jump then
+				LocalHumanoid:ChangeState(Enum.HumanoidStateType.Jumping)
 				LocalHumanoid.Jump = true
 			end
 			
@@ -86,9 +87,9 @@ end
 library.pathMagnitude = function(position)
 	local Path = PathfindingService:CreatePath({
 		AgentRadius = 1.5,
-		AgentHeight = 3,
+		AgentHeight = 4,
 		AgentCanJump = true,
-		WaypointSpacing = 1,
+		WaypointSpacing = 2,
 	})
 
 	Path:ComputeAsync(LocalCharacter:WaitForChild("Head").Position, position)
@@ -109,7 +110,11 @@ library.pathfind = function(position, visualize)
 	currentId += 1
 	
 	if visualize then
-		local Paths = workspace:FindFirstChild("paths") or Instance.new("Folder")
+		if workspace:FindFirstChild("paths") then
+			workspace:FindFirstChild("paths"):Destroy()
+		end
+		
+		local Paths = Instance.new("Folder")
 		Paths.Name = "paths"
 		Paths.Parent = workspace
 		
