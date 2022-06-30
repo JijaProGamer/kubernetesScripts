@@ -20,7 +20,10 @@ library.getClosestPlayer = function()
 		if Status then
 			local Team = Status:FindFirstChild("Team")
 			local Alive = Status:FindFirstChild("Alive")
-			return (Team.Value ~= "Spectator") and (Alive.Value)
+			
+			if Team and Alive then
+				return (Team.Value ~= "Spectator") and (Alive.Value)
+			end
 		end
 	end, function(player, distance) 
 		local Status = player:FindFirstChild("Status")
@@ -30,7 +33,7 @@ library.getClosestPlayer = function()
 			if LocalTeam == "FFA" then
 				return true
 			else
-				if LocalTeam ~= Team then
+				if LocalTeam.Value ~= Team.Value then
 					return true
 				end
 			end
