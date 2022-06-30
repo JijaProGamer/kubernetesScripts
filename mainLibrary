@@ -81,7 +81,7 @@ library.raycast = function(Start, End, Blacklist)
 	Params.FilterDescendantsInstances = Blacklist
 	Params.IgnoreWater = true
 	
-	local RayResult = workspace:Raycast(Start, Enum, Params)
+	local RayResult = workspace:Raycast(Start, End, Params)
 	
 	if RayResult then
 		return {
