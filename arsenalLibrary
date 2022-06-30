@@ -1,0 +1,70 @@
+local library = {}
+local mainLibrary = loadstring(game:HttpGet("https://raw.githubusercontent.com/JijaProGamer/kubernetesScripts/main/mainLibrary", true))()
+
+local Players = game:GetService("Players")
+
+local LocalPlayer = Players.LocalPlayer
+local LocalCharacter = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+local LocalHumanoid = LocalCharacter:WaitForChild("Humanoid")
+
+LocalPlayer.CharacterRemoving:Connect(function() 
+	LocalCharacter = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+	LocalHumanoid = LocalCharacter:WaitForChild("Humanoid")
+end)
+
+library.getClosestPlayer = function()
+	local LocalTeam = LocalPlayer:WaitForChild("Status"):WaitForChild("Team").Value
+	
+	local closestPlayers = mainLibrary.getClosestPlayer(function(player, character) 
+		local Status = player:FindFirstChild("Status")
+		if Status then
+			local Team = Status:FindFirstChild("Team")
+			local Alive = Status:FindFirstChild("Alive")
+			return (Team.Value ~= "Spectator") and (Alive.Value)
+		end
+	end, function(player, distance) 
+		local Status = player:FindFirstChild("Status")
+		if Status then
+			local Team = Status:FindFirstChild("Team")
+			
+			if LocalTeam == "FFA" then
+				return true
+			else
+				if LocalTeam ~= Team then
+					return true
+				end
+			end
+		end
+		return true
+	end)
+	
+	if closestPlayers[1] then
+		local visiblePlayers = {}
+		
+		for _,playerData in ipairs(closestPlayers) do
+			local Character = playerData.character
+			
+			local LocalPosition = LocalCharacter:GetPrimaryPartCFrame().Position
+			local enemyPosition = Character:GetPrimaryPartCFrame().Position
+			
+			local raycast = mainLibrary.raycast(LocalPosition, (enemyPosition - LocalPosition).Unit * 1000)
+			
+			if raycast.Sucess then
+				local Descendant = raycast.Instance:FindFirstDescendant(playerData.player.Name)
+				
+				if Descendant and Players:GetPlayerFromCharacter(Descendant) then
+					table.insert(visiblePlayers, playerData.player)
+				end
+			end
+		end
+		
+		return visiblePlayers[1] or closestPlayers[1].player
+	end 
+end
+
+library.shoot = function(location)
+	workspace.CurrentCamera.CFrame = CFrame.lookAt(workspace.CurrentCamera.CFrame.Position, location)
+	mainLibrary.reflection.simulateLeftClick()
+end
+
+return library
