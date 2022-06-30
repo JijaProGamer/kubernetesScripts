@@ -13,7 +13,7 @@ LocalPlayer.CharacterRemoving:Connect(function()
 end)
 
 library.getClosestPlayer = function()
-	local LocalTeam = LocalPlayer:WaitForChild("Status"):WaitForChild("Team").Value
+	local LocalTeam = LocalPlayer:WaitForChild("Status"):WaitForChild("Team")
 	
 	local closestPlayers = mainLibrary.getClosestPlayer(function(player, character) 
 		local Status = player:FindFirstChild("Status")
