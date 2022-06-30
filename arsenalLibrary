@@ -1,7 +1,8 @@
 local library = {}
-local mainLibrary = loadstring(game:HttpGet("https://raw.githubusercontent.com/JijaProGamer/kubernetesScripts/main/mainLibrary", true))()
 
 local Players = game:GetService("Players")
+local PathfindingService = game:GetService("PathfindingService")
+local RunService = game:GetService("RunService")
 
 local LocalPlayer = Players.LocalPlayer
 local LocalCharacter = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
@@ -12,61 +13,133 @@ LocalPlayer.CharacterRemoving:Connect(function()
 	LocalHumanoid = LocalCharacter:WaitForChild("Humanoid")
 end)
 
-library.getClosestPlayer = function()
-	local LocalTeam = LocalPlayer:WaitForChild("Status"):WaitForChild("Team")
-	
-	local closestPlayers = mainLibrary.getClosestPlayer(function(player, character) 
-		local Status = player:FindFirstChild("Status")
-		if Status then
-			local Team = Status:FindFirstChild("Team")
-			local Alive = Status:FindFirstChild("Alive")
-			
-			if Team and Alive then
-				return (Team.Value ~= "Spectator") and (Alive.Value)
-			end
-		end
-	end, function(player, distance) 
-		local Status = player:FindFirstChild("Status")
-		if Status then
-			local Team = Status:FindFirstChild("Team")
-			
-			if LocalTeam == "FFA" then
-				return true
-			else
-				if LocalTeam.Value ~= Team.Value then
-					return true
-				end
-			end
-		end
-	end)
-	
-	if closestPlayers[1] then
-		local visiblePlayers = {}
+library.walkToPoint = function(position, timeout)
+	if LocalHumanoid then
+		LocalHumanoid:MoveTo(position)
+		local start = tick()
+		local finished = false
+
+		LocalHumanoid.MoveToFinished:Connect(function()
+			finished = true
+		end)
+
+		repeat
+			RunService.Heartbeat:Wait()
+		until start + timeout < tick() or finished
 		
-		for _,playerData in ipairs(closestPlayers) do
-			local Character = playerData.character
-			
-			local LocalPosition = LocalCharacter:GetPrimaryPartCFrame().Position
-			local enemyPosition = Character:GetPrimaryPartCFrame().Position
-			
-			local raycast = mainLibrary.raycast(LocalPosition, (enemyPosition - LocalPosition).Unit * 1000, {LocalCharacter})
-			
-			if raycast.Sucess then
-				local Ancestor = raycast.Instance:FindFirstAncestor(playerData.player.Name)
-				
-				if Ancestor and Players:GetPlayerFromCharacter(Ancestor) then
-					table.insert(visiblePlayers, playerData.player)
-				end
-			end
-		end
-		
-		return visiblePlayers[1] or closestPlayers[1].player
-	end 
+		return finished
+	end
 end
 
-library.shoot = function(location)
-	workspace.CurrentCamera.CFrame = CFrame.lookAt(workspace.CurrentCamera.CFrame.Position, location)
-	mainLibrary.reflection.simulateLeftClick()
+local currentId = 0
+local path
+local waypoints
+local nextWaypointIndex
+local blockedConnection
+
+local function followPath(visualize, position, id)
+	local Paths = workspace:FindFirstChild("paths")
+	
+	path = PathfindingService:CreatePath({
+		AgentRadius = 1.5,
+		AgentHeight = 4,
+		AgentCanJump = true,
+		WaypointSpacing = 2,
+	})
+
+	path:ComputeAsync(LocalCharacter:WaitForChild("Head").Position, position)
+	
+	if path.Status == Enum.PathStatus.Success then
+		waypoints = path:GetWaypoints()
+
+		 blockedConnection = path.Blocked:Connect(function(blockedWaypointIndex)
+			if blockedWaypointIndex >= nextWaypointIndex then
+				blockedConnection:Disconnect()
+				followPath(visualize, position, id)
+			end
+		end)
+		
+		for i = 1, math.max(#waypoints, 2) do
+			local int = i
+			
+			local waypoint = waypoints[int]
+			nextWaypointIndex = int
+			
+			if visualize and workspace:FindFirstChild("paths") and currentId > id then
+				Paths:WaitForChild(int):Destroy()
+			end
+			
+			if currentId > id then
+				break
+			end
+			
+			if waypoint.Action == Enum.PathWaypointAction.Jump then
+				LocalHumanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+				LocalHumanoid.Jump = true
+			end
+			
+			workspace.CurrentCamera.CFrame = CFrame.lookAt(workspace.CurrentCamera.CFrame.Position, waypoint.Position + Vector3.new(0, 4,0))
+			library.walkToPoint(waypoint.Position, 1)
+		end
+	end
+end
+
+library.pathMagnitude = function(position)
+	local Path = PathfindingService:CreatePath({
+		AgentRadius = 1.5,
+		AgentHeight = 4,
+		AgentCanJump = true,
+		WaypointSpacing = 2,
+	})
+
+	Path:ComputeAsync(LocalCharacter:WaitForChild("Head").Position, position)
+
+	local size = 0
+
+	local Waypoints = Path:GetWaypoints()
+	if #Waypoints >= 2 then
+		for i = 2,#Waypoints do
+			size += (Waypoints[i-1].Position - Waypoints[i].Position).Magnitude
+		end		
+	end
+
+	return size
+end
+
+library.pathfind = function(position, visualize)
+	currentId += 1
+	
+	if visualize then
+		if workspace:FindFirstChild("paths") then
+			workspace:FindFirstChild("paths"):Destroy()
+		end
+		
+		local Paths = Instance.new("Folder")
+		Paths.Name = "paths"
+		Paths.Parent = workspace
+		
+		coroutine.wrap(function()
+			task.wait(0.1)
+			local Waypoints = path:GetWaypoints()
+
+			for i,waypoint in pairs(Waypoints) do
+				local NewPart = Instance.new("Part")
+				NewPart.Shape = Enum.PartType.Ball
+				NewPart.Position = waypoint.Position
+				NewPart.Color = Color3.fromRGB(106, 245, 0)
+				NewPart.Material = Enum.Material.Neon
+				NewPart.Anchored = true
+				NewPart.CanQuery = false
+				NewPart.CanCollide = false
+				NewPart.Name = i
+				NewPart.Size = Vector3.new(0.3,0.3,0.3)
+
+				NewPart.Parent = Paths
+			end
+		end)()
+	end
+	
+	followPath(visualize, position, currentId)
 end
 
 return library
