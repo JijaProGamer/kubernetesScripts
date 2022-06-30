@@ -50,9 +50,9 @@ library.getClosestPlayer = function()
 			local raycast = mainLibrary.raycast(LocalPosition, (enemyPosition - LocalPosition).Unit * 1000, {LocalCharacter})
 			
 			if raycast.Sucess then
-				local Descendant = raycast.Instance:FindFirstDescendant(playerData.player.Name)
+				local Ancestor = raycast.Instance:FindFirstAncestor(playerData.player.Name)
 				
-				if Descendant and Players:GetPlayerFromCharacter(Descendant) then
+				if Ancestor and Players:GetPlayerFromCharacter(Ancestor) then
 					table.insert(visiblePlayers, playerData.player)
 				end
 			end
