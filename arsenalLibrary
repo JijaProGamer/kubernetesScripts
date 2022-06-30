@@ -61,7 +61,7 @@ library.getClosestPlayer = function()
 		end]]
 		
 		--return visiblePlayers[1] or closestPlayers[1].player
-		return closestPlayers[1].player
+		return closestPlayers
 	end 
 end
 
