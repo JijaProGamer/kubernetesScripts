@@ -49,9 +49,11 @@ library.getClosestPlayer = function(includeCallback, exportCallback)
 	end
 	
 	for _, Character in ipairs(Characters) do		
+		local distance = pathfindingLibrary.pathMagnitude(Character:GetPrimaryPartCFrame().Position)
+		
 		table.insert(NearestPlayersPositions, {
 			player = Players:GetPlayerFromCharacter(Character),
-			distance = pathfindingLibrary.pathMagnitude(Character:GetPrimaryPartCFrame().Position),
+			distance = distance > 0 and distance or 1000000,
 		})
 	end
 	
@@ -69,9 +71,6 @@ library.getClosestPlayer = function(includeCallback, exportCallback)
 	end
 	
 	table.sort(NearestPlayers, function(player1, player2)
-		print(player1.distance, player2.distance)
-		print(player1.distance > player2.distance)
-		
 		return player1.distance > player2.distance
 	end)
 	
