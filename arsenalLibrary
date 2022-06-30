@@ -40,8 +40,8 @@ library.getClosestPlayer = function()
 		end
 	end)
 	
-	--[[if closestPlayers[1] then
-		local visiblePlayers = {}
+	if closestPlayers[1] then
+		--[[local visiblePlayers = {}
 		
 		for _,playerData in ipairs(closestPlayers) do
 			local Character = playerData.character
