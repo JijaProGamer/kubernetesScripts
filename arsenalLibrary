@@ -47,7 +47,7 @@ library.getClosestPlayer = function()
 			local LocalPosition = LocalCharacter:GetPrimaryPartCFrame().Position
 			local enemyPosition = Character:GetPrimaryPartCFrame().Position
 			
-			local raycast = mainLibrary.raycast(LocalPosition, (enemyPosition - LocalPosition).Unit * 1000)
+			local raycast = mainLibrary.raycast(LocalPosition, (enemyPosition - LocalPosition).Unit * 1000, {LocalCharacter})
 			
 			if raycast.Sucess then
 				local Descendant = raycast.Instance:FindFirstDescendant(playerData.player.Name)
