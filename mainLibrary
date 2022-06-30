@@ -62,6 +62,7 @@ library.getClosestPlayer = function(includeCallback, exportCallback)
 		if exportCallback(player, distance) then
 			table.insert(NearestPlayers, {
 				player = player,
+				character = player.Character,
 				distance = distance,
 			})
 		end
@@ -74,7 +75,7 @@ library.getClosestPlayer = function(includeCallback, exportCallback)
 	return NearestPlayers
 end
 
-library.rayCast = function(Start, End, Blacklist)
+library.raycast = function(Start, End, Blacklist)
 	local Params = RaycastParams.new()
 	Params.FilterType = Enum.RaycastFilterType.Blacklist
 	Params.FilterDescendantsInstances = Blacklist
