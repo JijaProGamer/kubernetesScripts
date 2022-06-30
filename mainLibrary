@@ -1,0 +1,104 @@
+local library = {
+	pathfinding = {},
+	reflection = {},
+}
+
+local Players = game:GetService("Players")
+local PathfindingService = game:GetService("PathfindingService")
+local UserInputService = game:GetService("UserInputService")
+
+local LocalPlayer = Players.LocalPlayer
+local LocalCharacter = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+local LocalHumanoid = LocalCharacter:WaitForChild("Humanoid")
+
+local Mouse = LocalPlayer:GetMouse()
+
+LocalPlayer.CharacterRemoving:Connect(function() 
+	LocalCharacter = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+	LocalHumanoid = LocalCharacter:WaitForChild("Humanoid")
+end)
+
+library.printTable = function(array)
+	for i,v in pairs(array) do
+		warn(i, v)
+	end
+end
+
+local pathfindingLibrary = loadstring(game:HttpGet("https://raw.githubusercontent.com/JijaProGamer/kubernetesScripts/main/pathfindingLibrary", true))()
+local reflectionLibrary = loadstring(game:HttpGet("https://raw.githubusercontent.com/JijaProGamer/kubernetesScripts/main/reflectionLibrary", true))()
+
+library.pathfinding.walkToPoint = pathfindingLibrary.walkToPoint
+library.pathfinding.pathfind = pathfindingLibrary.pathfind
+library.pathfinding.pathMagnitude = pathfindingLibrary.pathMagnitude
+
+library.reflection.simulateLeftClick = reflectionLibrary.simulateLeftClick
+library.reflection.pathfind = reflectionLibrary.pathfind
+library.reflection.pathMagnitude = reflectionLibrary.pathMagnitude
+
+library.getClosestPlayer = function(includeCallback, exportCallback)
+	local NearestPlayers = {}
+	local NearestPlayersPositions = {}
+	local Characters = {}
+	
+	for _, player in ipairs(Players:GetPlayers()) do	
+		if player.Character and player.UserId ~= LocalPlayer.UserId then
+			if includeCallback(player, player.Character) then
+				table.insert(Characters, player.Character)
+			end
+		end
+	end
+	
+	for _, Character in ipairs(Characters) do		
+		table.insert(NearestPlayersPositions, {
+			player = Players:GetPlayerFromCharacter(Character),
+			distance = pathfindingLibrary.pathMagnitude(Character:GetPrimaryPartCFrame().Position),
+		})
+	end
+	
+	for _, PlayerData in ipairs(NearestPlayersPositions) do
+		local player = PlayerData.player
+		local distance = PlayerData.distance
+		
+		if exportCallback(player, distance) then
+			table.insert(NearestPlayers, {
+				player = player,
+				distance = distance,
+			})
+		end
+	end
+	
+	table.sort(NearestPlayers, function(player1, player2)
+		return player1.distance > player2.distance
+	end)
+	
+	return NearestPlayers
+end
+
+library.rayCast = function(Start, End, Blacklist)
+	local Params = RaycastParams.new()
+	Params.FilterType = Enum.RaycastFilterType.Blacklist
+	Params.FilterDescendantsInstances = Blacklist
+	Params.IgnoreWater = true
+	
+	local RayResult = workspace:Raycast(Start, Enum, Params)
+	
+	if RayResult then
+		return {
+			Position = RayResult.Position,
+			Normal = RayResult.Normal,
+			Material = RayResult.Material,
+			Instance = RayResult.Instance,
+			Sucess = true,
+		}
+	else
+		return {
+			Position = End,
+			Normal = Vector3.new(0,0,0),
+			Material = Enum.Material.Air,
+			Instance = nil,
+			Sucess = false,
+		}
+	end
+end
+
+return library
